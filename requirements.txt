@@ -37,6 +37,7 @@ huggingface_hub==1.27.0
 idna==3.18
 importlib_resources==7.1.0
 instructor==1.15.4
+jieba==0.42.1
 Jinja2==3.1.6
 jiter==0.14.0
 joblib==1.5.3

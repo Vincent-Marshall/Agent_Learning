@@ -1,8 +1,8 @@
-# retriever.py
 import chromadb
 from chromadb.utils import embedding_functions
 from sentence_transformers import CrossEncoder
 from rank_bm25 import BM25Okapi
+import jieba
 from ai import chat
 
 client = chromadb.PersistentClient(path="./chroma_db")
@@ -19,7 +19,7 @@ reranker = CrossEncoder("BAAI/bge-reranker-v2-m3")
 _all_chunks: list[dict] = []
 _bm25: BM25Okapi | None = None
 
-# 相似度阈值配置
+# 相似度阈值配置（仅用于告警，不再截断返回空）
 RERANK_SCORE_THRESHOLD = 0.4
 
 
@@ -32,7 +32,8 @@ def build_bm25_index():
     docs = res["documents"]
     metas = res["metadatas"]
     _all_chunks = [{"text": d, "source": m["source"]} for d, m in zip(docs, metas)]
-    tokenized_corpus = [item["text"].split() for item in _all_chunks]
+    # 修复中文BM25：使用jieba分词，不再用split()
+    tokenized_corpus = [jieba.lcut(item["text"]) for item in _all_chunks]
     _bm25 = BM25Okapi(tokenized_corpus)
 
 
@@ -67,7 +68,8 @@ def retrieve(query: str, top_k: int = 5) -> list[dict]:
 
 def bm25_retrieve(query: str, top_k: int = 5) -> list[dict]:
     build_bm25_index()
-    tokenized_query = query.split()
+    # 修复中文BM25查询分词
+    tokenized_query = jieba.lcut(query)
     bm25_scores = _bm25.get_scores(tokenized_query)
     scored = list(zip(_all_chunks, bm25_scores))
     scored.sort(key=lambda x: x[1], reverse=True)
@@ -102,9 +104,11 @@ def retrieve_with_rerank(query: str, top_k: int = 5, candidate_k: int = 20) -> l
     # 按重排分数降序，取top_k
     ranked = sorted(zip(candidates, scores), key=lambda x: -x[1])
     result_items = [item[0] for item in ranked[:top_k]]
-    # 阈值校验：top1分数低于阈值直接返回空结果
+
+    # =====方案1：只告警，不截断返回空=====
     if result_items and ranked[0][1] < RERANK_SCORE_THRESHOLD:
-        return []
+        print(f"[WARN rerank] top1 rerank_score={ranked[0][1]:.4f} 低于阈值{RERANK_SCORE_THRESHOLD}，片段相关性弱，继续交给LLM判断")
+
     return result_items
 
 
@@ -131,9 +135,11 @@ def retrieve_with_query_expand(origin_query: str, top_k: int = 5, candidate_k: i
     rerank_scores = reranker.predict(pairs)
     ranked_result = sorted(zip(unique_candidates, rerank_scores), key=lambda x: -x[1])
     final_items = [i[0] for i in ranked_result[:top_k]]
-    # 相似度阈值兜底判断
+
+    # =====方案1：只告警，不截断返回空=====
     if final_items and ranked_result[0][1] < RERANK_SCORE_THRESHOLD:
-        return []
+        print(f"[WARN query_expand] top1 rerank_score={ranked_result[0][1]:.4f} 低于阈值{RERANK_SCORE_THRESHOLD}，片段相关性弱，继续交给LLM判断")
+
     return final_items
 
 
