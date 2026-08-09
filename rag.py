@@ -1,6 +1,6 @@
 # rag.py
 from ai import chat  # 沿用 02 篇的 chat 封装，指向 DeepSeek
-from retriever import retrieve
+from retriever import retrieve_with_rerank
 
 
 SYSTEM_PROMPT = """\
@@ -14,7 +14,7 @@ SYSTEM_PROMPT = """\
 
 
 def answer(question: str, top_k: int = 5) -> str:
-    hits = retrieve(question, top_k=top_k)
+    hits = retrieve_with_rerank(question, top_k=top_k)
 
     context = "\n\n---\n\n".join(
         f"[来源：{h['source']}]\n{h['text']}" for h in hits
@@ -37,5 +37,5 @@ def answer(question: str, top_k: int = 5) -> str:
 
 
 if __name__ == "__main__":
-    q = "峰哥怎么评价中医？"
+    q = "如何对项目的风险进行评估和管理？"
     print(f"问：{q}\n答：{answer(q)}")
