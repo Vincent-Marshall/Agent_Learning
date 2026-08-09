@@ -1,6 +1,6 @@
 # rag.py
 from ai import chat  # 沿用 02 篇的 chat 封装，指向 DeepSeek
-from retriever import retrieve_with_rerank
+from retriever import retrieve_with_query_expand
 
 
 SYSTEM_PROMPT = """\
@@ -14,7 +14,11 @@ SYSTEM_PROMPT = """\
 
 
 def answer(question: str, top_k: int = 5) -> str:
-    hits = retrieve_with_rerank(question, top_k=top_k)
+    # 替换为带查询改写的检索方法
+    hits = retrieve_with_query_expand(question, top_k=top_k)
+
+    if not hits:
+        return "在现有资料中未找到相关信息"
 
     context = "\n\n---\n\n".join(
         f"[来源：{h['source']}]\n{h['text']}" for h in hits
