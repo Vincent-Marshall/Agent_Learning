@@ -1,16 +1,7 @@
-# tool_registry.py
 import json
-import logging
 import threading
 from typing import Callable, Optional, Any
 from pydantic import BaseModel, ValidationError
-
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
-)
-logger = logging.getLogger(__name__)
 
 
 class Tool(BaseModel):
@@ -58,18 +49,13 @@ class ToolRegistry:
         tool = self._tools.get(name)
         if not tool:
             err_msg = f"工具 {name} 不存在"
-            logger.error(err_msg)
             return json.dumps({"error": err_msg}, ensure_ascii=False)
-
-        # 日志：记录工具调用原始输入
-        logger.info(f"[工具调用] name={name}, raw_args={args_json}")
 
         # 1、解析JSON参数
         try:
             args = json.loads(args_json)
         except json.JSONDecodeError as e:
             err_msg = f"参数JSON解析失败: {str(e)}"
-            logger.error(err_msg)
             return json.dumps({"error": err_msg}, ensure_ascii=False)
 
         # 2、Pydantic参数校验
@@ -79,7 +65,6 @@ class ToolRegistry:
                 args = validated_args.model_dump()
             except ValidationError as e:
                 err_msg = f"参数校验失败: {str(e)}"
-                logger.warning(err_msg)
                 return json.dumps({"error": err_msg}, ensure_ascii=False)
 
         # 3、执行工具，带超时控制
@@ -96,7 +81,6 @@ class ToolRegistry:
                 if t.is_alive():
                     # 超时！线程还在跑
                     err_msg = f"工具执行超时({tool.timeout}s)"
-                    logger.error(err_msg)
                     return json.dumps({"error": err_msg}, ensure_ascii=False)
                 if "exception" in res_box:
                     raise res_box["exception"]
@@ -106,12 +90,10 @@ class ToolRegistry:
                 result = tool.func(**args)
 
             ret_json = json.dumps(result, ensure_ascii=False, default=str)
-            logger.info(f"[工具返回] name={name}, output={ret_json}")
             return ret_json
 
         except Exception as e:
             err_msg = f"工具执行异常: {str(e)}"
-            logger.exception(err_msg)
             return json.dumps({"error": err_msg}, ensure_ascii=False)
 
 
