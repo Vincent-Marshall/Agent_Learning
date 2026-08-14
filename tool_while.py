@@ -1,7 +1,7 @@
 # main_agent.py
 from openai import OpenAI   # 1. 大模型客户端
 from tool_registry import registry  # 2. 导入我们写好的注册表实例
-from function_call import client  # 3. 导入instructor增强客户端
+from tool_function_call import client  # 3. 导入instructor增强客户端
 
 def run(question: str):
     messages = [{"role": "user", "content": question}]

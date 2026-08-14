@@ -1,3 +1,4 @@
+# tool_registry.py
 import json
 import logging
 import threading
