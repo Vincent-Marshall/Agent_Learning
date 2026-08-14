@@ -27,5 +27,5 @@ def run(question: str):
             })
 
 if __name__ == "__main__":
-    answer = run("北京天气怎么样")
+    answer = run("郑州天气怎么样")
     print(f"\n[最终回答] {answer}")
