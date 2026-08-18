@@ -1,4 +1,3 @@
-# mcp_git_server.py
 import subprocess
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
@@ -7,16 +6,35 @@ mcp = FastMCP("git-inspector")
 
 
 def _run_git(args: list[str], cwd: Path) -> str:
-    result = subprocess.run(
-        ["git"] + args,
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    if result.returncode != 0:
-        return f"错误：{result.stderr.strip()}"
-    return result.stdout.strip()
+    try:
+        if not cwd.exists():
+            return f"【错误】路径不存在：{cwd}"
+        if not (cwd / ".git").exists():
+            return f"【错误】不是Git仓库，无.git目录：{cwd}"
+
+        startupinfo = None
+        if subprocess.os.name == "nt":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        result = subprocess.run(
+            ["git"] + args,
+            cwd=str(cwd),
+            stdin=subprocess.DEVNULL,   # 核心！切断继承过来的stdin，防止git等待输入卡死
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            startupinfo=startupinfo
+        )
+        if result.returncode != 0:
+            return f"【Git错误】{result.stderr.strip()}"
+        return result.stdout.strip()
+    except subprocess.TimeoutExpired:
+        return "【错误】git命令执行超时(10s)"
+    except Exception as e:
+        return f"【异常】{str(e)}"
 
 
 @mcp.tool()
