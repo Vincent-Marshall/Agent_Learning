@@ -5,23 +5,39 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import instructor
 from pydantic import BaseModel
+import httpx
 
 load_dotenv()
 
-# 原生DeepSeek客户端
-raw_client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com/v1",
-)
+# 读取环境变量开关 USE_LOCAL_LLLM = "1" 使用本地ollama，否则走云端DeepSeek
+USE_LOCAL = os.getenv("USE_LOCAL_LLM") == "1"
+
+if USE_LOCAL:
+    # 本地 Ollama，关闭系统代理防止本机请求被代理劫持
+    transport = httpx.HTTPTransport(trust_env=False)
+    raw_client = OpenAI(
+        api_key="ollama",
+        base_url="http://127.0.0.1:11434/v1",
+        http_client=httpx.Client(transport=transport, timeout=20)
+    )
+    DEFAULT_MODEL = "qwen2.5:7b"
+else:
+    # 云端 DeepSeek
+    raw_client = OpenAI(
+        api_key=os.getenv("DEEPSEEK_API_KEY"),
+        base_url="https://api.deepseek.com/v1",
+    )
+    DEFAULT_MODEL = "deepseek-chat"
+
 # 用instructor增强客户端，支持response_model结构化输出
 client = instructor.from_openai(raw_client)
 
-DEFAULT_MODEL = "deepseek-chat"
 
 # 原有普通非流式对话（保留兼容旧业务）
 def chat(messages: list[dict], model: str = DEFAULT_MODEL,** kwargs) -> str:
     resp = raw_client.chat.completions.create(model=model, messages=messages, **kwargs)
     return resp.choices[0].message.content
+
 
 # 原有流式对话（保留前端打字预览能力）
 def chat_stream(messages: list[dict], model: str = DEFAULT_MODEL, **kwargs) -> Iterable:
@@ -32,6 +48,7 @@ def chat_stream(messages: list[dict], model: str = DEFAULT_MODEL, **kwargs) -> I
         delta = chunk.choices[0].delta.content
         if delta:
             yield delta
+
 
 # 新增：instructor结构化专用非流式方法（核心改造点）
 def chat_struct(
