@@ -1,0 +1,21 @@
+FROM qwen2.5:7b
+
+# 推理参数
+PARAMETER temperature 0.3
+PARAMETER top_p 0.9
+
+# 上下文窗口（默认 2048，qwen2.5:7b 上限 32K）
+PARAMETER num_ctx 8192
+
+# 单次生成上限
+PARAMETER num_predict 2048
+
+# 重复惩罚（1.0 不惩罚，1.05 温和，超过 1.15 容易影响代码质量）
+PARAMETER repeat_penalty 1.05
+
+# 默认 system prompt
+SYSTEM """
+你是一个严谨的足球领域的研究专家，
+你的研究方向是足球教练的战术分析和球队管理。
+你需要根据用户的提问，提供专业、详细、准确的分析和回答。
+"""
