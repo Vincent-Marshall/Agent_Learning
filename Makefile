@@ -12,7 +12,7 @@ help:  ## 列出带说明的目标
 # ch09: Langfuse 自部署观测栈(web:3000 + worker + postgres + clickhouse + redis + minio)
 # -p 独立 project 名:不加会与主 compose 同落 mewhelp project,两边的 minio 服务同名相撞
 langfuse-up:
-	docker compose -p mewhelp-langfuse -f docker-compose.langfuse.yml up -d
+	docker compose -p agent-learning-langfuse -f docker-compose.langfuse.yml up -d
 	@echo "Langfuse 起中: http://localhost:3000 (admin@mewhelp.local / mewhelp123)"
 	@echo "首次就绪约 2-3 分钟;key 已 headless 预置,写 .env:"
 	@echo "  LANGFUSE_PUBLIC_KEY=pk-lf-mewhelp-local"
@@ -20,7 +20,7 @@ langfuse-up:
 	@echo "  LANGFUSE_BASE_URL=http://localhost:3000"
 
 langfuse-down:
-	docker compose -p mewhelp-langfuse -f docker-compose.langfuse.yml down
+	docker compose -p agent-learning-langfuse -f docker-compose.langfuse.yml down
 
 calibrate-confidence:  ## ch09 置信度阈值校准(需 milvus + 上游可调通 + 知识库已建)
 	PYTHONPATH=. uv run python scripts/calibrate_confidence.py
