@@ -105,9 +105,18 @@ app.include_router(jobs_router)
 # 后台各页共用外壳(样式 + 取数/重跑脚本 + 导航),抽成文件放静态目录
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
+# ---- React 聊天页(2026-09-22 重构)----
+# 前端在 frontend/ 用 Vite 构建,产物 dist/。构建过就用 React 版聊天页并挂载其资源;
+# 没构建(旧部署/克隆后未跑 npm)则回落原版静态聊天页,不阻塞后端各页。
+_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if _DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=_DIST_DIR / "assets"), name="react-assets")
+
 
 @app.get("/", include_in_schema=False)
 async def chat_page() -> FileResponse:
+    if _DIST_DIR.exists():
+        return FileResponse(_DIST_DIR / "index.html")
     return FileResponse(_STATIC_DIR / "index.html")
 
 

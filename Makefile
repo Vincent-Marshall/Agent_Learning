@@ -173,3 +173,11 @@ eval-ch07:
 
 eval-ch08:  ## ch08 验收样例端到端(需 make dev 全服务 + MCP Server 在跑 + 已应用 sql/ch08-ddl.sql)
 	uv run python -m scripts.eval_ch08
+
+# ---- 前端(Vite + React)----
+frontend-dev:  ## 开发模式:Vite 热更新(:5173,API 代理到 :8000)
+	npm --prefix frontend run dev
+
+frontend-build:  ## 构建 React 聊天页产物(frontend/dist),FastAPI 托管
+	npm --prefix frontend install
+	npm --prefix frontend run build
