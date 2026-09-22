@@ -1,13 +1,11 @@
-// 聊天页应用外壳(提交 #1:工程脚手架 + 设计规范落地)。
-// 消息流、SSE 接入等核心逻辑在后续提交中实现。
-import React from "react";
-
-const SUGGESTIONS = [
-  "七天无理由退货怎么算",
-  "订单1001的物流到哪了",
-  "会员权益有哪些",
-  "退货运费谁出",
-];
+// 聊天页应用(提交 #2:消息流 + SSE 流式渲染)。
+// #3 将接入:订单选择器 / 表单弹窗 / 会话侧栏 / 👍👎 反馈。
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Bubble from "./components/Bubble.jsx";
+import ChatInput from "./components/ChatInput.jsx";
+import CitePopover from "./components/CitePopover.jsx";
+import EmptyState from "./components/EmptyState.jsx";
+import { chatStream, readSSEStream, getConversationId } from "./api.js";
 
 function Sidebar() {
   return (
@@ -19,7 +17,7 @@ function Sidebar() {
           <div className="ci-preview">智能客服 · 小喵</div>
         </div>
       </div>
-      <button className="new-chat" type="button">＋ 新对话</button>
+      <button className="new-chat" type="button" disabled>＋ 新对话</button>
       <div className="conv-list">
         <div className="sb-empty">会话列表接入中…</div>
       </div>
@@ -27,37 +25,61 @@ function Sidebar() {
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="empty">
-      <div className="mascot">🐱</div>
-      <h1>你好，我是小喵</h1>
-      <p>喵喵优选的智能客服，商品、订单、售后都能问我～</p>
-      <div className="chips">
-        {SUGGESTIONS.map((s) => (
-          <button key={s} className="chip" type="button">{s}</button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ChatInput() {
-  return (
-    <div className="chat-foot">
-      <div className="input-bar">
-        <textarea
-          rows="1"
-          placeholder="输入消息，和小喵聊聊吧～（回车发送 / Shift+回车换行）"
-          disabled
-        />
-        <button className="send" type="button" disabled aria-label="发送">➤</button>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
+  const [messages, setMessages] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [cite, setCite] = useState(null); // { citation, anchorEl }
+  const msgsRef = useRef(null);
+
+  // 新消息/流式增量 → 滚到底
+  useEffect(() => {
+    const el = msgsRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  const updateLastBot = useCallback((fn) => {
+    setMessages((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (next[i].role === "bot") {
+          next[i] = fn(next[i]);
+          break;
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const onCite = useCallback((anchorEl, citation) => {
+    setCite({ citation, anchorEl });
+  }, []);
+
+  const send = useCallback(async (text) => {
+    if (busy) return;
+    setBusy(true);
+    const id = String(Date.now());
+    setMessages((prev) => [
+      ...prev,
+      { id: id + "-u", role: "user", text },
+      { id: id + "-b", role: "bot", text: "", badges: [], citations: [], actions: [], streaming: true },
+    ]);
+    try {
+      const resp = await chatStream(text, getConversationId());
+      await readSSEStream(resp, {
+        delta: (d) => updateLastBot((m) => ({ ...m, text: m.text + d })),
+        tool: (name) => updateLastBot((m) => ({ ...m, badges: [...m.badges, name] })),
+        citations: (items) => updateLastBot((m) => ({ ...m, citations: items })),
+        actions: (items) => updateLastBot((m) => ({ ...m, actions: items })),
+        interrupt: (data) => updateLastBot((m) => ({ ...m, interrupt: data })),
+      });
+    } catch (e) {
+      updateLastBot((m) => ({ ...m, error: true, text: "回复失败，请稍后重试" }));
+    } finally {
+      updateLastBot((m) => ({ ...m, streaming: false }));
+      setBusy(false);
+    }
+  }, [busy, updateLastBot]);
+
   return (
     <div className="app-shell">
       <Sidebar />
@@ -66,9 +88,17 @@ export default function App() {
           <div className="agent-name"><span className="dot" /> 客服小喵 · 在线</div>
           <span className="ci-preview">喵喵优选 · 智能客服</span>
         </header>
-        <EmptyState />
-        <ChatInput />
+        <div className="msgs" ref={msgsRef}>
+          {messages.length === 0 && <EmptyState busy={busy} onPick={send} />}
+          {messages.map((m) => <Bubble key={m.id} msg={m} onCite={onCite} />)}
+        </div>
+        <ChatInput busy={busy} onSend={send} />
       </main>
+      <CitePopover
+        citation={cite?.citation || null}
+        anchorEl={cite?.anchorEl || null}
+        onClose={() => setCite(null)}
+      />
     </div>
   );
 }
