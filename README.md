@@ -48,6 +48,7 @@ Python 3.12 + FastAPI + LangGraph / LangChain + SQLAlchemy / MySQL + Milvus
 
 ```
 app/              # 应用主体：api / graph(LangGraph 图) / core / kb / tools / db / schemas / static
+frontend/         # 聊天页前端（Vite + React，毛玻璃风；构建产物由 FastAPI 托管）
 mcp_servers/      # 物流 / 售后 MCP 服务（独立进程，HTTP transport）
 scripts/          # 建库、评估、训练等离线脚本
 sql/              # 建表与种子数据
@@ -79,7 +80,7 @@ make dev                  # 应用 :8000 + MCP :8101/:8102
   - [x] 接入应用入口，跑通单测（469 通过）与聊天页全链路验证
   - [x] 接入数据飞轮与可观测模块（批处理工具链 + Langfuse 编排适配）
   - [x] 接入各章评估脚本与设计文档，跑通评估：意图 18/18、指代消解 3/3、Query 扩写 3/3、检索 3/5（2 例换说法漏召回，留作调优线索）
-  - [ ] 前端重构：简约毛玻璃风格
+  - [x] 前端重构：聊天页 React 化（Vite + 简约毛玻璃，SSE 协议不变；后台页留待后续迭代）
   - [ ] 部署上线
 
 ## 授权
