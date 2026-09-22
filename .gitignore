@@ -21,3 +21,5 @@ data/ch10/*
 data/*.log
 data/ch04/*.log
 chroma_db/
+node_modules/
+frontend/dist/
