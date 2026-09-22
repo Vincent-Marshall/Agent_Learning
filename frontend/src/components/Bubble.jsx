@@ -1,9 +1,9 @@
 // 消息气泡:用户(主色渐变,右) / 客服(浅灰,左,带头像)。
-// 客服气泡内:工具徽章 + markdown 正文(含可点引用角标)+ 打字指示器。
+// 客服气泡内:工具徽章 + markdown 正文(含可点引用角标)+ 打字指示器 + children(动作/订单卡/反馈等)。
 import React, { useLayoutEffect, useRef } from "react";
 import { renderMarkdown, decorateCitations } from "../markdown.jsx";
 
-export default function Bubble({ msg, onCite }) {
+export default function Bubble({ msg, onCite, children }) {
   const textRef = useRef(null);
 
   // 正文渲染完成后,把 [n] 替换成可点角标(幂等,StrictMode 双跑无害)
@@ -44,8 +44,9 @@ export default function Bubble({ msg, onCite }) {
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }}
               />
             ) : (
-              <span className="typing"><span /><span /><span /></span>
+              !msg.interrupt && <span className="typing"><span /><span /><span /></span>
             )}
+            {children}
           </>
         )}
       </div>
