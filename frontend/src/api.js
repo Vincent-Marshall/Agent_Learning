@@ -4,10 +4,19 @@
 const SESSION_KEY = "mewhelp_user_id";
 const CONV_KEY = "mewhelp_conv_id";
 
+// crypto.randomUUID 仅在安全上下文(HTTPS/localhost)可用;公网 http://IP 直连时
+// 未定义,直接调用会抛 TypeError。这里做降级生成,两种环境都稳。
+function genUserId() {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  return "u-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+
 export function getUserId() {
   let id = localStorage.getItem(SESSION_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = genUserId();
     localStorage.setItem(SESSION_KEY, id);
   }
   return id;
