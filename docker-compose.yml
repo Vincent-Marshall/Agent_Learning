@@ -3,7 +3,7 @@ services:
     image: mysql:8   # 8.4 系;dev 数据卷自 ch02 起就是 8.4 的数据文件,钉 8.0 会拒绝降级启动
     container_name: mewhelp-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}   # 生产必须通过环境变量注入强口令
       MYSQL_DATABASE: mewhelp
     ports:
       - "3306:3306"

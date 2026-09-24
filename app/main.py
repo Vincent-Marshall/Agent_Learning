@@ -8,8 +8,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+from app.config import settings
 
 from app.api.acceptance import router as acceptance_router
 from app.api.actions import router as actions_router
@@ -87,6 +90,17 @@ def _check_context_budget() -> None:
 
 
 app = FastAPI(title="MewHelp", version="0.1.0", lifespan=lifespan)
+
+# 跨源策略:同源部署(nginx 反代收敛前后端)时 cors_origins 留空,不挂中间件;
+# 前后端分离部署(前端独立端口/域名)时填白名单,如 CORS_ORIGINS=http://localhost:5173。
+if settings.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 app.include_router(actions_router)
 app.include_router(chat_router)
 app.include_router(extract_router)

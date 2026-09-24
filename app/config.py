@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     chat_reasoning_split: str = ""    # MiniMax 专属:true 让思考进 reasoning_content 独立字段,
                                       # 而不是混在 content 里的 <think>。关不掉思考链时靠它兜底
     token_budget: int = 2000
+    # 跨源白名单(逗号分隔)。同源部署(nginx 反代收敛前后端)时留空即可;
+    # 前端独立端口/域名访问 API 时填其源,如 http://localhost:5173。
+    cors_origins: str = ""
     database_url: str = "mysql+asyncmy://root:root@localhost:3306/mewhelp"
     test_database_url: str = "mysql+asyncmy://root:root@localhost:3306/mewhelp_ch02_test"
     # ch03 知识库检索
