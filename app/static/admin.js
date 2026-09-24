@@ -44,6 +44,30 @@
     --text: #1e293b; --text-sub: #64748b;
     --shadow: 0 8px 32px rgba(99,102,241,.10), 0 2px 8px rgba(30,41,59,.06);
     --font: "PingFang SC","Microsoft YaHei","Segoe UI",system-ui,-apple-system,sans-serif;
+
+    /* 重定义宿主页面共享变量(acceptance.css 的像素风 token → 毛玻璃 token)。
+       本表注入晚于 acceptance.css,变量覆盖生效,页面各组件无需逐个改写。 */
+    --ink: #334155;
+    --fur: #6366f1;
+    --coral: #8b5cf6;
+    --cream: rgba(255,255,255,.45);
+    --paper: rgba(255,255,255,.75);
+    --muted: #64748b;
+    --error: #ef4444;
+    --online: #10b981;
+    --sky: #38bdf8;
+    --violet: #a78bfa;
+    --shadow: 0 8px 32px rgba(99,102,241,.10), 0 2px 8px rgba(30,41,59,.06);
+    --shadow-sm: 0 4px 16px rgba(30,41,59,.08);
+    --shadow-lg: 0 16px 48px rgba(30,41,59,.16);
+  }
+
+  /* 宿主页面粗边框组件 → 细边框玻璃化(逐页定向,先覆盖知识库页) */
+  .hit, .kv .box, .read, .gatebar, .bar-track, .hit.top1 {
+    border-width: 1px !important;
+    border-color: var(--line-strong) !important;
+    background: var(--glass-strong) !important;
+    border-radius: 12px;
   }
 
   /* ---- 宿主页面主题 ---- */
